@@ -58,9 +58,19 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                     </button>
                 </form>
 
-                <p className="text-xs text-blue-200 mt-6 text-center">
-                    Your credentials are used locally and never stored on our servers.
-                </p>
+                <div className="mt-6 text-center space-y-2">
+                    <a
+                        href="https://support.google.com/accounts/answer/185833"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-200 hover:text-white underline transition-colors"
+                    >
+                        How to get an App Password?
+                    </a>
+                    <p className="text-xs text-blue-200">
+                        Your credentials are used locally and never stored on our servers.
+                    </p>
+                </div>
             </div>
         </div>
     );

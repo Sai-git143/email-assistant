@@ -13,7 +13,12 @@ export async function POST(request: NextRequest) {
 
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-        const prompt = `Parse the following natural language message to extract email details and generate a professional, polite email body. Return a JSON object with keys: to (recipient email), subject (email subject), body (professional email content that is clear, concise, and well-written).
+        const prompt = `Parse the following natural language message to extract email details and generate a professional, polite email body. Return a JSON object with keys: 
+        - to (recipient email)
+        - subject (email subject)
+        - body (professional email content that is clear, concise, and well-written)
+        - recipientName (name of the person receiving the email, if mentioned)
+        - senderName (name of the person sending the email, if mentioned)
 
 Message: "${message}"
 
@@ -32,11 +37,15 @@ Respond only with valid JSON, no extra text.`;
             const toMatch = text.match(/to["\s:]+([^\s,"]+)/i);
             const subjectMatch = text.match(/subject["\s:]+([^,\n}]+)/i);
             const bodyMatch = text.match(/body["\s:]+([^}]+)/i);
+            const recipientNameMatch = text.match(/recipientName["\s:]+([^,\n}]+)/i);
+            const senderNameMatch = text.match(/senderName["\s:]+([^,\n}]+)/i);
 
             const fallback = {
                 to: toMatch ? toMatch[1].replace(/["']/g, '') : '',
                 subject: subjectMatch ? subjectMatch[1].replace(/["']/g, '') : '',
                 body: bodyMatch ? bodyMatch[1].replace(/["']/g, '') : message,
+                recipientName: recipientNameMatch ? recipientNameMatch[1].replace(/["']/g, '') : '',
+                senderName: senderNameMatch ? senderNameMatch[1].replace(/["']/g, '') : '',
             };
 
             return NextResponse.json(fallback);
