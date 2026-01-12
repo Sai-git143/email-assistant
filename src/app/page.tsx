@@ -1,14 +1,14 @@
 'use client';
 
 import { useEmailAssistant } from '@/hooks/useEmailAssistant';
-import LoginScreen from '@/components/LoginScreen';
+import LandingPage from '@/components/LandingPage';
 import ChatInterface from '@/components/ChatInterface';
 
 export default function Home() {
   const { loggedIn, messages, isLoading, login, processMessage, resetConversation } = useEmailAssistant();
 
   if (!loggedIn) {
-    return <LoginScreen onLogin={login} />;
+    return <LandingPage onLogin={login} />;
   }
 
   return (

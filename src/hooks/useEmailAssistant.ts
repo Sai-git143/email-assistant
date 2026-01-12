@@ -101,54 +101,57 @@ export function useEmailAssistant() {
             } else if (currentStep === 'collect-info') {
                 if (input.toLowerCase() === 'skip') {
                     // Proceed without names
+                    nextStep = 'draft';
+                    const draftResponse = await fetch('/api/draft-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            purpose: emailData.body,
+                            subject: emailData.subject,
+                            recipientName: emailData.recipientName,
+                            senderName: emailData.senderName,
+                        }),
+                    });
+                    const draftData = await draftResponse.json();
+                    const draftBody = draftResponse.ok ? draftData.body : emailData.body || '';
+                    setDraft({ subject: emailData.subject || '', body: draftBody });
+                    assistantResponse = `I've created a draft for you:\n\nTo: ${emailData.to}\nSubject: ${emailData.subject}\n\n${draftBody}\n\nDo you want to 'approve' and send, or 'revise' it?`;
+
                 } else {
-                    // Simple extraction (can be improved with AI)
-                    // For now, assume user provides names or we just pass the input as context to the drafter? 
-                    // Let's try to parse simply or just ask AI to extract again? 
-                    // Actually, let's just use the input as "additional context" for now, or assume the user provided names.
-                    // To be robust, let's just call parse again on this input specifically for names? 
-                    // Or simpler: just proceed to draft and pass this input as "names context".
-                    // Let's try to extract names using a regex or simple logic is hard.
-                    // Let's just assume the user input IS the names info and pass it to draft-email as context?
-                    // No, draft-email expects specific fields. 
-                    // Let's do a quick "parse names" call or just regex.
-                    // Regex is risky. Let's use the `parse-email` endpoint again but with a specific prompt? No, that endpoint is for full emails.
-                    // Let's just store the input as `recipientName` and `senderName` loosely? No.
+                    // Use AI to extract names
+                    const extractResponse = await fetch('/api/extract-info', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: input }),
+                    });
+                    const extractData = await extractResponse.json();
 
-                    // Better approach: Just proceed to draft, but pass the *previous* body + this new input as the "purpose" to the drafter, 
-                    // AND tell the drafter to extract names? 
-                    // Actually, let's just ask the user to format it "Recipient: X, Sender: Y"? No, bad UX.
-
-                    // Let's use a simple heuristic:
-                    // If input contains "Recipient is X" or "To X", extract X.
-                    // If input contains "I am Y" or "From Y", extract Y.
-
-                    const rName = input.match(/(?:recipient|to)\s+(?:is\s+)?([a-z]+)/i)?.[1];
-                    const sName = input.match(/(?:sender|from|i am)\s+(?:is\s+)?([a-z]+)/i)?.[1];
+                    const newRecipientName = extractData.recipientName || emailData.recipientName;
+                    const newSenderName = extractData.senderName || emailData.senderName;
 
                     setEmailData(prev => ({
                         ...prev,
-                        recipientName: rName || prev.recipientName,
-                        senderName: sName || prev.senderName
+                        recipientName: newRecipientName,
+                        senderName: newSenderName
                     }));
-                }
 
-                nextStep = 'draft';
-                const draftResponse = await fetch('/api/draft-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        purpose: emailData.body, // Original purpose
-                        subject: emailData.subject,
-                        recipientName: input.match(/(?:recipient|to)\s+(?:is\s+)?([a-z]+)/i)?.[1] || emailData.recipientName, // Use extracted or existing
-                        senderName: input.match(/(?:sender|from|i am)\s+(?:is\s+)?([a-z]+)/i)?.[1] || emailData.senderName,
-                        additionalContext: input // Pass full input just in case (need to update API for this? No, just rely on names for now)
-                    }),
-                });
-                const draftData = await draftResponse.json();
-                const draftBody = draftResponse.ok ? draftData.body : emailData.body || '';
-                setDraft({ subject: emailData.subject || '', body: draftBody });
-                assistantResponse = `I've created a draft for you:\n\nTo: ${emailData.to}\nSubject: ${emailData.subject}\n\n${draftBody}\n\nDo you want to 'approve' and send, or 'revise' it?`;
+                    nextStep = 'draft';
+                    const draftResponse = await fetch('/api/draft-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            purpose: emailData.body,
+                            subject: emailData.subject,
+                            recipientName: newRecipientName,
+                            senderName: newSenderName,
+                            additionalContext: input
+                        }),
+                    });
+                    const draftData = await draftResponse.json();
+                    const draftBody = draftResponse.ok ? draftData.body : emailData.body || '';
+                    setDraft({ subject: emailData.subject || '', body: draftBody });
+                    assistantResponse = `I've created a draft for you:\n\nTo: ${emailData.to}\nSubject: ${emailData.subject}\n\n${draftBody}\n\nDo you want to 'approve' and send, or 'revise' it?`;
+                }
 
             } else if (currentStep === 'draft') {
                 if (input.toLowerCase().includes('approve') || input.toLowerCase().includes('send')) {
